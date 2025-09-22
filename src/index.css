@@ -2,41 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* FloatChat Ocean-themed Design System
+All colors MUST be HSL for proper theming
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Ocean Background System */
+    --background: 210 100% 97%;
+    --foreground: 220 40% 15%;
 
+    /* Ocean Cards & Surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 40% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 40% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Ocean Primary (Deep Blue) */
+    --primary: 220 80% 25%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 200 100% 70%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Ocean Secondary (Aqua) */
+    --secondary: 185 70% 85%;
+    --secondary-foreground: 220 80% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Ocean Muted Tones */
+    --muted: 200 20% 92%;
+    --muted-foreground: 220 25% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Ocean Accent (Bright Aqua) */
+    --accent: 185 80% 60%;
+    --accent-foreground: 220 80% 25%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Status Colors */
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 150 60% 45%;
+    --success-foreground: 0 0% 98%;
+    --warning: 35 80% 55%;
+    --warning-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Ocean Borders & Inputs */
+    --border: 200 30% 85%;
+    --input: 200 30% 90%;
+    --ring: 185 80% 60%;
 
-    --radius: 0.5rem;
+    /* Ocean Gradients */
+    --gradient-ocean-depth: linear-gradient(180deg, hsl(220 80% 25%), hsl(200 70% 35%));
+    --gradient-ocean-surface: linear-gradient(180deg, hsl(185 80% 60%), hsl(200 60% 80%));
+    --gradient-ocean-light: linear-gradient(135deg, hsl(185 70% 85%), hsl(200 60% 90%));
+    
+    /* Ocean Shadows & Effects */
+    --shadow-ocean: 0 10px 30px -5px hsl(220 80% 25% / 0.15);
+    --shadow-float: 0 5px 20px -5px hsl(185 80% 60% / 0.25);
+    --glow-aqua: 0 0 20px hsl(185 80% 60% / 0.3);
+
+    /* Wave Animation Values */
+    --wave-speed: 3s;
+    --wave-amplitude: 10px;
+
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -101,5 +128,94 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Ocean-themed Component Styles */
+@layer components {
+  .ocean-gradient {
+    background: var(--gradient-ocean-depth);
+  }
+  
+  .ocean-surface {
+    background: var(--gradient-ocean-surface);
+  }
+  
+  .ocean-light {
+    background: var(--gradient-ocean-light);
+  }
+  
+  .wave-animation {
+    animation: wave var(--wave-speed) ease-in-out infinite;
+  }
+  
+  .float-shadow {
+    box-shadow: var(--shadow-float);
+  }
+  
+  .ocean-shadow {
+    box-shadow: var(--shadow-ocean);
+  }
+  
+  .aqua-glow {
+    box-shadow: var(--glow-aqua);
+  }
+  
+  .chat-bubble-user {
+    @apply bg-primary text-primary-foreground rounded-2xl rounded-br-md px-4 py-3 max-w-md ml-auto;
+  }
+  
+  .chat-bubble-bot {
+    @apply bg-card border border-border rounded-2xl rounded-bl-md px-4 py-3 max-w-md mr-auto ocean-shadow;
+  }
+  
+  .status-card {
+    @apply bg-card border border-border rounded-xl p-6 ocean-shadow hover:float-shadow transition-all duration-300;
+  }
+  
+  .ocean-button {
+    @apply bg-primary hover:bg-primary/90 text-primary-foreground shadow-md hover:shadow-lg transition-all duration-200;
+  }
+  
+  .ocean-input {
+    @apply bg-input border-border focus:border-accent focus:ring-accent/20;
+  }
+}
+
+/* Ocean Wave Animations */
+@layer utilities {
+  @keyframes wave {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(calc(var(--wave-amplitude) * -1));
+    }
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-10px) rotate(1deg);
+    }
+  }
+  
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px hsl(185 80% 60% / 0.2);
+    }
+    50% {
+      box-shadow: 0 0 30px hsl(185 80% 60% / 0.4);
+    }
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
   }
 }

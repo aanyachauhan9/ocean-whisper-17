@@ -22,6 +22,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          glow: "hsl(var(--primary-glow))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -30,6 +31,14 @@ export default {
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -57,6 +66,28 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        ocean: {
+          50: "hsl(200 100% 97%)",
+          100: "hsl(200 85% 92%)",
+          200: "hsl(200 75% 85%)",
+          300: "hsl(200 65% 75%)",
+          400: "hsl(200 55% 65%)",
+          500: "hsl(185 80% 60%)",
+          600: "hsl(190 75% 50%)",
+          700: "hsl(200 70% 35%)",
+          800: "hsl(210 75% 25%)",
+          900: "hsl(220 80% 15%)",
+        },
+      },
+      backgroundImage: {
+        'ocean-depth': 'var(--gradient-ocean-depth)',
+        'ocean-surface': 'var(--gradient-ocean-surface)', 
+        'ocean-light': 'var(--gradient-ocean-light)',
+      },
+      boxShadow: {
+        'ocean': 'var(--shadow-ocean)',
+        'float': 'var(--shadow-float)',
+        'aqua-glow': 'var(--glow-aqua)',
       },
       borderRadius: {
         lg: "var(--radius)",
