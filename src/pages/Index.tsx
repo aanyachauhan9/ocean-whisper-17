@@ -1,7 +1,7 @@
-import FloatChatLayout from "@/components/FloatChatLayout";
+import FloatChatApp from "./FloatChatApp";
 
 const Index = () => {
-  return <FloatChatLayout />;
+  return <FloatChatApp />;
 };
 
 export default Index;

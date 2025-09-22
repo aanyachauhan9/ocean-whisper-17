@@ -11,7 +11,11 @@ interface Message {
   timestamp: Date;
 }
 
-const ChatInterface = () => {
+interface ChatInterfaceProps {
+  onFloatClick?: (floatData: any) => void;
+}
+
+const ChatInterface = ({ onFloatClick }: ChatInterfaceProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
