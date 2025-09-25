@@ -1,175 +1,44 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, MessageCircle } from "lucide-react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { useMapboxToken } from "./MapboxTokenProvider";
 
 interface LandingPageProps {
   onEnterApp: () => void;
 }
 
 const LandingPage = ({ onEnterApp }: LandingPageProps) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { token } = useMapboxToken();
 
   useEffect(() => {
-    if (!mapContainer.current || !token) return;
-
-    // Initialize globe
-    mapboxgl.accessToken = token;
-    
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/satellite-v9',
-      projection: { name: 'globe' },
-      zoom: 1.5,
-      center: [30, 15],
-      pitch: 30,
-    });
-
-    // Add atmosphere
-    map.current.on('style.load', () => {
-      map.current?.setFog({
-        color: 'rgb(50, 100, 150)',
-        'high-color': 'rgb(100, 150, 200)',
-        'horizon-blend': 0.2,
-      });
-      
-      // Add ARGO floats simulation
-      addArgoFloats();
-      setIsLoading(false);
-    });
-
-    // Globe rotation
-    const secondsPerRevolution = 120;
-    let userInteracting = false;
-    let spinEnabled = true;
-
-    function spinGlobe() {
-      if (!map.current || !spinEnabled || userInteracting) return;
-      const zoom = map.current.getZoom();
-      if (zoom < 3) {
-        const center = map.current.getCenter();
-        center.lng -= 360 / secondsPerRevolution;
-        map.current.easeTo({ center, duration: 1000, easing: (n) => n });
-      }
-    }
-
-    map.current.on('mousedown', () => { userInteracting = true; });
-    map.current.on('mouseup', () => { userInteracting = false; spinGlobe(); });
-    map.current.on('moveend', spinGlobe);
-
-    const spinInterval = setInterval(spinGlobe, 1000);
-
-    return () => {
-      clearInterval(spinInterval);
-      map.current?.remove();
-    };
-  }, [token]);
-
-  const addArgoFloats = () => {
-    if (!map.current) return;
-
-    // Generate random ARGO float positions (simplified for demo)
-    const floats = Array.from({ length: 1000 }, (_, i) => ({
-      type: 'Feature' as const,
-      properties: {
-        id: `argo_${i}`,
-        status: Math.random() > 0.1 ? 'active' : 'inactive',
-      },
-      geometry: {
-        type: 'Point' as const,
-        coordinates: [
-          (Math.random() - 0.5) * 360,
-          (Math.random() - 0.5) * 160,
-        ],
-      },
-    }));
-
-    map.current.addSource('argo-floats', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: floats,
-      },
-    });
-
-    // Active floats
-    map.current.addLayer({
-      id: 'argo-floats-active',
-      type: 'circle',
-      source: 'argo-floats',
-      filter: ['==', ['get', 'status'], 'active'],
-      paint: {
-        'circle-radius': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          0, 2,
-          10, 8
-        ],
-        'circle-color': '#00d4ff',
-        'circle-opacity': 0.8,
-        'circle-stroke-width': 1,
-        'circle-stroke-color': '#ffffff',
-      },
-    });
-
-    // Inactive floats
-    map.current.addLayer({
-      id: 'argo-floats-inactive',
-      type: 'circle',
-      source: 'argo-floats',
-      filter: ['==', ['get', 'status'], 'inactive'],
-      paint: {
-        'circle-radius': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          0, 1,
-          10, 4
-        ],
-        'circle-color': '#666666',
-        'circle-opacity': 0.6,
-      },
-    });
-
-    // Add pulsing animation
-    map.current.addLayer({
-      id: 'argo-floats-pulse',
-      type: 'circle',
-      source: 'argo-floats',
-      filter: ['==', ['get', 'status'], 'active'],
-      paint: {
-        'circle-radius': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          0, 4,
-          10, 16
-        ],
-        'circle-color': '#00d4ff',
-        'circle-opacity': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          0, 0.1,
-          10, 0.3
-        ],
-      },
-    });
-  };
+    // Simulate loading for animated background
+    const timer = setTimeout(() => setIsLoading(false), 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-black">
-      {/* Globe Container */}
-      <div ref={mapContainer} className="absolute inset-0" />
+    <div className="relative h-screen w-full overflow-hidden">
+      {/* Animated Ocean Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-950">
+        <div className="absolute inset-0 opacity-20">
+          {/* Animated dots representing ARGO floats */}
+          {Array.from({ length: 50 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-accent rounded-full animate-pulse"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: `${2 + Math.random() * 2}s`
+              }}
+            />
+          ))}
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+      </div>
       
       {/* Overlay Content */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/40">
+      <div className="absolute inset-0">
         {/* Header */}
         <div className="absolute top-8 left-8 right-8">
           <div className="flex items-center justify-between">

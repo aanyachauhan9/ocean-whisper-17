@@ -3,9 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { MapPin, Layers, Square, Circle } from "lucide-react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { useMapboxToken } from "./MapboxTokenProvider";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 interface MapCanvasProps {
   onFloatClick: (floatData: any) => void;
@@ -13,126 +12,99 @@ interface MapCanvasProps {
 
 const MapCanvas = ({ onFloatClick }: MapCanvasProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
+  const map = useRef<L.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [aoiMode, setAoiMode] = useState<'none' | 'rectangle' | 'circle'>('none');
-  const { token } = useMapboxToken();
+  const floatMarkersRef = useRef<L.LayerGroup | null>(null);
 
   useEffect(() => {
-    if (!mapContainer.current || map.current || !token) return;
+    if (!mapContainer.current || map.current) return;
 
-    mapboxgl.accessToken = token;
+    // Fix for default markers
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+    });
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: [65, 20], // Arabian Sea
+    map.current = L.map(mapContainer.current, {
+      center: [20, 65], // Arabian Sea
       zoom: 4,
-      pitch: 0,
+      zoomControl: false,
     });
 
-    map.current.on('load', () => {
-      setMapLoaded(true);
-      addArgoFloats();
-      addRegionBoundaries();
-    });
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map.current);
+
+    // Add zoom control to top right
+    L.control.zoom({ position: 'topright' }).addTo(map.current);
+
+    // Initialize layer group for float markers
+    floatMarkersRef.current = L.layerGroup().addTo(map.current);
+
+    setMapLoaded(true);
+    addArgoFloats();
+    addRegionBoundaries();
 
     return () => {
       map.current?.remove();
     };
-  }, [token]);
+  }, []);
 
   const addArgoFloats = () => {
-    if (!map.current) return;
+    if (!map.current || !floatMarkersRef.current) return;
+
+    // Clear existing markers
+    floatMarkersRef.current.clearLayers();
 
     // Generate sample ARGO float data
     const floats = Array.from({ length: 200 }, (_, i) => ({
-      type: 'Feature' as const,
-      properties: {
-        id: `argo_${i}`,
-        platform_id: `${2900000 + i}`,
-        cycle_number: Math.floor(Math.random() * 100) + 1,
-        profile_date: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        qc_flag: Math.random() > 0.1 ? 1 : 4, // 1 = good, 4 = bad
-        temperature: (Math.random() * 30 + 5).toFixed(1),
-        salinity: (Math.random() * 5 + 33).toFixed(2),
-        depth: Math.floor(Math.random() * 2000) + 100,
-      },
-      geometry: {
-        type: 'Point' as const,
-        coordinates: [
-          50 + Math.random() * 30, // Longitude
-          5 + Math.random() * 30,   // Latitude
-        ],
-      },
+      id: `argo_${i}`,
+      platform_id: `${2900000 + i}`,
+      cycle_number: Math.floor(Math.random() * 100) + 1,
+      profile_date: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      qc_flag: Math.random() > 0.1 ? 1 : 4, // 1 = good, 4 = bad
+      temperature: (Math.random() * 30 + 5).toFixed(1),
+      salinity: (Math.random() * 5 + 33).toFixed(2),
+      depth: Math.floor(Math.random() * 2000) + 100,
+      lat: 5 + Math.random() * 30,   // Latitude
+      lng: 50 + Math.random() * 30,  // Longitude
     }));
 
-    map.current.addSource('argo-floats', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: floats,
-      },
-    });
+    // Add markers for each float
+    floats.forEach(float => {
+      const isGoodQuality = float.qc_flag === 1;
+      
+      const marker = L.circleMarker([float.lat, float.lng], {
+        radius: isGoodQuality ? 6 : 4,
+        fillColor: isGoodQuality ? '#00d4ff' : '#ff6b6b',
+        color: '#ffffff',
+        weight: isGoodQuality ? 2 : 1,
+        opacity: 1,
+        fillOpacity: isGoodQuality ? 0.8 : 0.6
+      });
 
-    // Good quality floats
-    map.current.addLayer({
-      id: 'argo-floats-good',
-      type: 'circle',
-      source: 'argo-floats',
-      filter: ['==', ['get', 'qc_flag'], 1],
-      paint: {
-        'circle-radius': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          3, 4,
-          10, 8
-        ],
-        'circle-color': '#00d4ff',
-        'circle-opacity': 0.8,
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#ffffff',
-      },
-    });
+      marker.bindPopup(`
+        <div class="p-2">
+          <h3 class="font-semibold">ARGO Float ${float.platform_id}</h3>
+          <p><strong>Cycle:</strong> ${float.cycle_number}</p>
+          <p><strong>Date:</strong> ${float.profile_date}</p>
+          <p><strong>Temperature:</strong> ${float.temperature}°C</p>
+          <p><strong>Salinity:</strong> ${float.salinity} PSU</p>
+          <p><strong>Depth:</strong> ${float.depth}m</p>
+          <p><strong>QC:</strong> ${isGoodQuality ? 'Good' : 'Poor'}</p>
+        </div>
+      `);
 
-    // Poor quality floats
-    map.current.addLayer({
-      id: 'argo-floats-poor',
-      type: 'circle',
-      source: 'argo-floats',
-      filter: ['==', ['get', 'qc_flag'], 4],
-      paint: {
-        'circle-radius': [
-          'interpolate',
-          ['linear'],
-          ['zoom'],
-          3, 3,
-          10, 6
-        ],
-        'circle-color': '#ff6b6b',
-        'circle-opacity': 0.6,
-        'circle-stroke-width': 1,
-        'circle-stroke-color': '#ffffff',
-      },
-    });
+      marker.on('click', () => {
+        onFloatClick(float);
+      });
 
-    // Click handler for floats
-    map.current.on('click', ['argo-floats-good', 'argo-floats-poor'], (e) => {
-      if (e.features && e.features.length > 0) {
-        const feature = e.features[0];
-        onFloatClick(feature.properties);
-      }
-    });
-
-    // Cursor pointer on hover
-    map.current.on('mouseenter', ['argo-floats-good', 'argo-floats-poor'], () => {
-      if (map.current) map.current.getCanvas().style.cursor = 'pointer';
-    });
-
-    map.current.on('mouseleave', ['argo-floats-good', 'argo-floats-poor'], () => {
-      if (map.current) map.current.getCanvas().style.cursor = '';
+      floatMarkersRef.current?.addLayer(marker);
     });
   };
 
@@ -140,45 +112,20 @@ const MapCanvas = ({ onFloatClick }: MapCanvasProps) => {
     if (!map.current) return;
 
     // Arabian Sea boundary (simplified)
-    const arabianSeaBoundary = {
-      type: 'Feature' as const,
-      properties: { name: 'Arabian Sea' },
-      geometry: {
-        type: 'Polygon' as const,
-        coordinates: [[
-          [50, 5], [80, 5], [80, 30], [50, 30], [50, 5]
-        ]],
-      },
-    };
+    const arabianSeaBoundary = [
+      [5, 50], [5, 80], [30, 80], [30, 50], [5, 50]
+    ] as [number, number][];
 
-    map.current.addSource('regions', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: [arabianSeaBoundary],
-      },
+    const polygon = L.polygon(arabianSeaBoundary, {
+      color: '#00d4ff',
+      fillColor: '#00d4ff',
+      fillOpacity: 0.1,
+      weight: 2,
+      dashArray: '5, 5'
     });
 
-    map.current.addLayer({
-      id: 'regions-fill',
-      type: 'fill',
-      source: 'regions',
-      paint: {
-        'fill-color': '#00d4ff',
-        'fill-opacity': 0.1,
-      },
-    });
-
-    map.current.addLayer({
-      id: 'regions-outline',
-      type: 'line',
-      source: 'regions',
-      paint: {
-        'line-color': '#00d4ff',
-        'line-width': 2,
-        'line-dasharray': [2, 2],
-      },
-    });
+    polygon.addTo(map.current);
+    polygon.bindPopup('<strong>Arabian Sea</strong><br/>Primary study region');
   };
 
   const zoomToRegion = (region: string) => {
@@ -187,18 +134,16 @@ const MapCanvas = ({ onFloatClick }: MapCanvasProps) => {
     setSelectedRegion(region);
     
     const regions = {
-      'arabian-sea': { center: [65, 17.5], zoom: 5 },
-      'bay-of-bengal': { center: [88, 15], zoom: 5 },
-      'indian-ocean': { center: [75, 0], zoom: 3 },
-      'global': { center: [0, 0], zoom: 1 },
+      'arabian-sea': { center: [17.5, 65] as [number, number], zoom: 5 },
+      'bay-of-bengal': { center: [15, 88] as [number, number], zoom: 5 },
+      'indian-ocean': { center: [0, 75] as [number, number], zoom: 3 },
+      'global': { center: [0, 0] as [number, number], zoom: 2 },
     };
 
     const regionData = regions[region as keyof typeof regions];
     if (regionData) {
-      map.current.flyTo({
-        center: regionData.center as [number, number],
-        zoom: regionData.zoom,
-        duration: 2000,
+      map.current.flyTo(regionData.center, regionData.zoom, {
+        duration: 2
       });
     }
   };
