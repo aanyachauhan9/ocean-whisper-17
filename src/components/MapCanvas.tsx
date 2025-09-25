@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { MapPin, Layers, Square, Circle } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { useMapboxToken } from "./MapboxTokenProvider";
 
 interface MapCanvasProps {
   onFloatClick: (floatData: any) => void;
@@ -16,11 +17,12 @@ const MapCanvas = ({ onFloatClick }: MapCanvasProps) => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [aoiMode, setAoiMode] = useState<'none' | 'rectangle' | 'circle'>('none');
+  const { token } = useMapboxToken();
 
   useEffect(() => {
-    if (!mapContainer.current || map.current) return;
+    if (!mapContainer.current || map.current || !token) return;
 
-    mapboxgl.accessToken = 'pk.demo.mapbox.com'; // Demo token
+    mapboxgl.accessToken = token;
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -39,7 +41,7 @@ const MapCanvas = ({ onFloatClick }: MapCanvasProps) => {
     return () => {
       map.current?.remove();
     };
-  }, []);
+  }, [token]);
 
   const addArgoFloats = () => {
     if (!map.current) return;

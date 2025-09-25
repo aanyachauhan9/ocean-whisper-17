@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, MessageCircle } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { useMapboxToken } from "./MapboxTokenProvider";
 
 interface LandingPageProps {
   onEnterApp: () => void;
@@ -12,12 +13,13 @@ const LandingPage = ({ onEnterApp }: LandingPageProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { token } = useMapboxToken();
 
   useEffect(() => {
-    if (!mapContainer.current) return;
+    if (!mapContainer.current || !token) return;
 
     // Initialize globe
-    mapboxgl.accessToken = 'pk.demo.mapbox.com'; // Demo token for showcase
+    mapboxgl.accessToken = token;
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -66,7 +68,7 @@ const LandingPage = ({ onEnterApp }: LandingPageProps) => {
       clearInterval(spinInterval);
       map.current?.remove();
     };
-  }, []);
+  }, [token]);
 
   const addArgoFloats = () => {
     if (!map.current) return;
